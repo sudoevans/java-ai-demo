@@ -1,0 +1,8 @@
+FROM container-registry.oracle.com/java/jdk:25.0.4.1
+WORKDIR /opt/app
+
+COPY ./target/layered-jar-spring-boot-*.jar app.jar
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

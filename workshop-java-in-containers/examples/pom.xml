@@ -1,0 +1,63 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>demo</groupId>
+    <artifactId>java-container-images-workshop</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+    <name>Java Container Images Workshop</name>
+    <description>
+        This project is a collection of simple code examples related to the
+        Java Container Images Workshop.
+    </description>
+
+    <properties>
+        <maven.enforcer.plugin.version>3.6.3</maven.enforcer.plugin.version>
+        <required.maven.version>3.6.3</required.maven.version>
+    </properties>
+
+    <modules>
+        <module>jlink-slim-image-hello-world</module>
+        <module>container-cpu-ergonomics-java</module>
+        <module>container-diagnostics-spring-boot</module>
+        <module>all-in-one-spring-boot</module>
+        <module>container-image-hygiene-spring-boot</module>
+        <module>java-command-line-options-spring-boot</module>
+        <module>jlink-cds-image-spring-boot</module>
+        <module>jlink-slim-image-spring-boot</module>
+        <module>jlink-multi-architecture-spring-boot</module>
+        <module>leyden-aot-cache-spring-boot</module>
+        <module>layered-jar-spring-boot</module>
+        <module>multi-architecture-image-builds-spring-boot</module>
+        <module>agent-container-image-java</module>
+    </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${maven.enforcer.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>enforce-versions</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>${required.maven.version}</version>
+                                    <message>Maven ${required.maven.version}+ is required. Use the Maven Wrapper or upgrade your Maven installation.</message>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
