@@ -7,6 +7,7 @@ The examples in this repository are intended to support the following workshops:
 - [Java for AI Workshop](./workshop-java-for-ai/README.md)
 - [Java with AI Workshop](./workshop-java-with-ai/README.md)
 - [Secure Coding Workshop](./workshop-secure-coding/README.md)
+- [Java Module System](./workshop-java-module-system/README.md)
 - [Java in Containers Workshop](./workshop-java-in-containers/README.md)
 
 ---

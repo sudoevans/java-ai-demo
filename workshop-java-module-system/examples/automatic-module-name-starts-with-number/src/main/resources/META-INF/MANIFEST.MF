@@ -1,0 +1,2 @@
+Main-Class: demo.Main
+Automatic-Module-Name: 123.invalid.name

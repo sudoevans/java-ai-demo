@@ -1,0 +1,85 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>demo</groupId>
+    <artifactId>java-module-system-workshop</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+    <name>Java Module System Workshop</name>
+    <description>
+        This project is a collection of simple code examples related to the
+        Java Module System Workshop.
+    </description>
+
+    <properties>
+        <java.version>25</java.version>
+
+        <maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
+        <required.maven.version>3.6.3</required.maven.version>
+    </properties>
+
+    <modules>
+        <module>automatic-module-name</module>
+        <module>automatic-module-name-starts-with-number</module>
+        <module>automatic-module-needs-to-be-packaged-as-jar</module>
+        <module>challenges-missing-dependency</module>
+        <module>challenges-split-package-bypass-access-control</module>
+        <module>challenges-split-package-duplicate-class</module>
+        <module>challenges-split-package-multiple-versions</module>
+        <module>challenges-two-modules-same-package</module>
+        <module>migration-add-exports</module>
+        <module>migration-add-modules</module>
+        <module>migration-add-opens</module>
+        <module>migration-add-reads</module>
+        <module>migration-bottom-up</module>
+        <module>migration-bottom-up-with-dependencies</module>
+        <module>migration-patch-module</module>
+        <module>migration-split-package-named-unnamed</module>
+        <module>migration-top-down</module>
+        <module>multi-release-jar-file</module>
+        <module>multi-release-jar-file-one-module</module>
+        <module>opens</module>
+        <module>passing-parameters</module>
+        <module>requires</module>
+        <module>requires-static</module>
+        <module>requires-transitive</module>
+        <module>service-provider-interfaces</module>
+        <module>simple-hello-world-application-with-modules</module>
+        <module>simple-hello-world-application-without-modules</module>
+        <module>tools-jdeps</module>
+        <module>tools-jlink</module>
+    </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${maven-enforcer-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>enforce-versions</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>${required.maven.version}</version>
+                                    <message>Maven ${required.maven.version}+ is required. Use the Maven Wrapper or upgrade your Maven installation.</message>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <version>[${java.version},)</version>
+                                    <message>Java ${java.version}+ is required.</message>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
