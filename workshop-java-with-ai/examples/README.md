@@ -111,8 +111,7 @@ If that folder already exists, use a different empty directory or delete it
 first.
 
 ```shell
-git clone https://github.com/albertattard/demo-supermarket-starter.git \
-  demo-supermarket
+git clone https://github.com/albertattard/demo-supermarket-starter.git demo-supermarket
 ```
 
 Work in this local clone for the remaining workshop steps.
@@ -135,11 +134,11 @@ The five most recent commits in the starter repository. Stop and seek help if
 this does not look like the expected Demo Supermarket history.
 
 ```
-336cd9d (HEAD -> main, origin/main, origin/HEAD) Implement persisted guest carts
-6c193d2 Seed catalog categories and products
-e61a121 Add repository-local agent skills
-25c9c3e Create Spring Boot project foundation
-83cfc5b Initial commit
+1bec071 (HEAD -> main, origin/main, origin/HEAD) Implement persisted guest carts
+f3dc18d Seed catalog categories and products
+6147ce0 Add repository-local agent skills
+9b17dd3 Create Spring Boot project foundation
+98da1be Initial commit
 ```
 
 ## Build the application
@@ -157,6 +156,9 @@ change. Stop and resolve a failure in this section before continuing.
    ```shell
    ./mvnw clean verify
    ```
+
+   If you cannot run Playwright, use `./mvnw clean package` instead. That will
+   build the application without running the Playwright user journey tests.
 
    **Optional: inspect the build artefacts.** Confirm that the Spring Boot
    executable JAR was created before starting the application.
@@ -195,20 +197,7 @@ change. Stop and resolve a failure in this section before continuing.
    resolve the problem before continuing.
 
    ```shell
-   for attempt in {1..60}; do
-     status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
-       'http://localhost:8080/' 2>/dev/null || true)"
-
-     if [ "${status}" = '200' ]; then
-       exit 0
-     fi
-
-     sleep 1
-   done
-
-   echo 'The application did not respond with HTTP 200 within one minute.' >&2
-   tail -n 100 './target/application.log' || true
-   exit 1
+   until curl --silent --fail http://localhost:8080/ >/dev/null; do sleep 1; done
    ```
 
 3. Access the application
@@ -226,7 +215,6 @@ change. Stop and resolve a failure in this section before continuing.
 
    ```shell
    kill "$(cat './target/application.pid')"
-   rm -f './target/application.pid'
    ```
 
 ## Understand the project
@@ -250,8 +238,37 @@ avoidable back-and-forth and makes the response easier to assess: you can see
 whether Codex stayed within scope, used repository evidence, and returned
 something that supports your next decision.
 
-1. Ask Codex to guide your initial exploration. It must not modify files,
-   branches, or task briefs.
+1. Ask Codex, or your preferred AI coding agent, to guide your initial
+   exploration. It must not modify files, branches, or task briefs. There is no
+   need to select a high reasoning model for this task
+
+   > Goal:
+   > Build a practical mental model of this Java application before making changes.
+   >
+   > Lens:
+   > Act as a technical onboarding guide and codebase investigator. Prefer a focused orientation over a complete codebase tour.
+   >
+   > Boundaries:
+   > - Inspect only this repository checkout; do not use Codex memory, prior sessions, parent directories, external resources, or network services.
+   > - Do not modify files or run commands that write, download dependencies, install browsers, start servers, or execute Maven/Gradle builds or tests.
+   > - First read repository-local guidance and relevant README files, if present.
+   > - Limit inspection to build/configuration, one implemented vertical slice (controller → service → persistence/migration → view → tests), security relevant to that slice, and Git status plus the five latest commits.
+   > - Cite substantive claims with repository-relative paths only.
+   > - Label findings as `Static inspection` or `Unverified locally`.
+   > - Do not treat README roadmap prose as implemented behaviour without supporting source and tests.
+   >
+   > Output:
+   > 1. **Application model**: implemented behaviour and a compact vertical-flow trace.
+   > 2. **How to verify locally**: recommended commands, each labelled “Not executed”.
+   > 3. **Where things live**: feature code, config/security, data, views/static assets, and tests.
+   > 4. **Current repository state**: working tree, branch, and five latest commits.
+   > 5. **Safe first contribution**: one concrete, small exploration target with likely production and test files.
+   > 6. **90-minute onboarding plan**
+   > 7. **Observed conventions**
+   > 8. **Questions only the team can answer**
+   > 9. **Evidence and limits**: inspected areas and anything unverified.
+
+   ![Initial Exploration](assets/images/codex-initial-exploration.png)
 
    The command below runs Codex non-interactively against the current
    repository. The prompt defines the work; the command options define the
@@ -288,21 +305,31 @@ something that supports your next decision.
      --config 'model_reasoning_effort="low"' \
      --output-last-message '/tmp/codex-onboarding-guide.md' \
      - <<'EOF' > '/tmp/codex-onboarding-guide.log' 2>&1
-   Goal
+   Goal:
    Build a practical mental model of this Java application before making changes.
 
-   Lens
-   Act as a technical onboarding guide and codebase investigator.
+   Lens:
+   Act as a technical onboarding guide and codebase investigator. Prefer a focused orientation over a complete codebase tour.
 
-   Boundaries
-   Inspect the repository only. Do not modify files. Do not attempt a complete codebase tour. Base claims on specific files and identify anything you cannot verify. When citing files, use paths relative to the repository root, such as `src/main/java/demo/supermarket/SupermarketApplication.java`. Never use absolute paths, temporary-directory paths, or local-file links.
+   Boundaries:
+   - Inspect only this repository checkout; do not use Codex memory, prior sessions, parent directories, external resources, or network services.
+   - Do not modify files or run commands that write, download dependencies, install browsers, start servers, or execute Maven/Gradle builds or tests.
+   - First read repository-local guidance and relevant README files, if present.
+   - Limit inspection to build/configuration, one implemented vertical slice (controller → service → persistence/migration → view → tests), security relevant to that slice, and Git status plus the five latest commits.
+   - Cite substantive claims with repository-relative paths only.
+   - Label findings as `Static inspection` or `Unverified locally`.
+   - Do not treat README roadmap prose as implemented behaviour without supporting source and tests.
 
-   Output
-   - what the application does and how to verify it locally;
-   - where feature code, configuration, data, and tests live, with repository-relative file references;
-   - the current work visible in the repository and a safe first contribution to explore;
-   - a focused 90-minute onboarding plan; and
-   - repository conventions plus questions only the team can answer.
+   Output:
+   1. **Application model**: implemented behaviour and a compact vertical-flow trace.
+   2. **How to verify locally**: recommended commands, each labelled “Not executed”.
+   3. **Where things live**: feature code, config/security, data, views/static assets, and tests.
+   4. **Current repository state**: working tree, branch, and five latest commits.
+   5. **Safe first contribution**: one concrete, small exploration target with likely production and test files.
+   6. **90-minute onboarding plan**
+   7. **Observed conventions**
+   8. **Questions only the team can answer**
+   9. **Evidence and limits**: inspected areas and anything unverified.
    EOF
    ```
 
@@ -317,39 +344,43 @@ something that supports your next decision.
    authoritative description of the repository. Stop and seek help if it invents
    repository details or omits important uncertainty.
 
-   ```markdown
-   ## What the application does
+   ~~~markdown
+   ## 1. Application model
 
-   This is a small server-rendered Spring Boot grocery application.
+   **Static inspection:** This is a Spring Boot 4.1.1, Java 25, Maven application using server-rendered Thymeleaf views, Spring Data JPA, Flyway, H2, Spring Security, and HTMX ([pom.xml](pom.xml), [application.yml](src/main/resources/application.yml)).
 
-   The implemented customer journey is:
+   The implemented customer-facing behavior is:
 
-   1. Browse an active product catalogue.
-   2. Search by product name or description.
-   3. Filter by category.
-   4. Start a guest cart.
-   5. Add, update, or remove products.
-   6. View a cart identified by an opaque token.
+   - Browse active catalogue products at `/` and `/products`.
+   - Filter by active category and case-insensitive name/description search.
+   - Start and persist an anonymous cart using an opaque token.
+   - Add, update, decrease, and remove cart items.
+   - Render the cart and catalogue through Thymeleaf, with HTMX partial updates.
+   - Expose public catalogue, cart, static assets, error, and health routes ([SecurityConfiguration.java](src/main/java/demo/supermarket/security/SecurityConfiguration.java)).
 
-   Evidence:
+   The README also describes checkout, logistics, inventory, delivery, and payment-related capabilities, but those are not supported by the inspected implementation and tests. Treat them as roadmap/domain context, not confirmed behavior ([README.md](README.md)).
 
-   - Routes: `src/main/java/demo/supermarket/catalog/CatalogController.java`, `src/main/java/demo/supermarket/cart/CartController.java`
-   - Business logic: `src/main/java/demo/supermarket/catalog/CatalogService.java`, `src/main/java/demo/supermarket/cart/CartService.java`
-   - UI: `src/main/resources/templates/catalog.html`, `src/main/resources/templates/cart.html`
-   - Persistence: `src/main/resources/db/migration/V2__catalog.sql`, `V3__guest_carts.sql`, `V4__product_slugs.sql`
+   Compact catalogue flow:
+
+   ```text
+   GET / or /products
+     → CatalogController
    ...
-   ```
+   ~~~
 
-   Verify the response yourself. Open the two files or directories Codex
-   identifies as most important, then answer:
+   Verify the response yourself. Open the files Codex identifies as necessary to
+   substantiate these answers:
 
-   - What starts the application?
-   - Where is the main catalogue or order workflow implemented?
-   - Which part of the codebase would you inspect before changing `TASK-004`?
+   - Which class and method form the application entry point, and which local
+     command starts it?
+   - Trace either the catalogue or order workflow from its HTTP entry point to its
+     domain logic. Which files implement that path?
+   - Before changing `TASK-004`, which task brief, application code, and tests
+     would you inspect first, and why?
 
-   If Codex cannot name specific files, or its explanation conflicts with the
-   code, ask a narrower follow-up question and verify that answer against the
-   repository.
+   If Codex cannot name specific repository-relative files, or its explanation
+   conflicts with the code, ask a narrower follow-up question and verify that
+   answer against the repository.
 
 3. Continue the conversation in your own Codex session.
 
@@ -413,9 +444,12 @@ create a starting draft. Treat that draft as input for review, not as a finished
 result. Here, we deliberately create a small hand-groomed file so every line has
 a clear purpose.
 
-1. Compare a test-strategy request before repository guidance exists. Codex can
-   still inspect the code and task brief, but it must infer the team’s working
-   agreements from scattered evidence.
+1. Compare a test-strategy request before repository guidance exists.
+
+   > Describe this project’s framework and technology stack for a new contributor in a paragraph or two.
+
+   Codex can still inspect the code and task brief, but it must infer the team’s
+   working agreements from scattered evidence.
 
    ```shell
    codex exec \
@@ -432,10 +466,10 @@ a clear purpose.
    Review the model’s response
 
    ```markdown
-   This is a conventional Java 25 Spring Boot 4.1.1 application built and dependency-managed with Maven. It uses Spring MVC for HTTP handling and Thymeleaf for server-rendered HTML, with HTMX adding limited client-side interactivity. It is deliberately not a React/Vue-style single-page application and has no separate frontend package manager or build pipeline.
+   Demo Supermarket is a small server-rendered monolithic web application built with Java 25, Spring Boot 4.1.1, and Maven. The backend uses Spring MVC with domain-oriented packages such as `catalog` and `cart`, Spring Data JPA for persistence, Flyway for versioned SQL migrations, and an in-memory H2 database configured in PostgreSQL compatibility mode. Hibernate schema generation is validation-only, so the migration scripts under `src/main/resources/db/migration` are the database definition source.
 
-   Persistence uses Spring Data JPA with an in-memory H2 database in PostgreSQL compatibility mode; Flyway owns schema migrations, while Hibernate validates the schema rather than generating it. Spring Security protects routes by default using HTTP Basic, and Spring Boot Actuator exposes a health endpoint. Tests include Spring’s test stack for unit/controller coverage and Microsoft Playwright for end-to-end browser tests. The main code is organized by domain areas such as `catalog`, `cart`, and `security`, with templates and static assets under `src/main/resources`.
-   ...
+   The UI is rendered with Thymeleaf templates and enhanced progressively with HTMX; static CSS, images, and WebJars provide the browser-side assets without a separate JavaScript frontend build. Spring Security protects non-public routes with HTTP Basic authentication, while Spring Boot Actuator exposes health checks. Tests use Spring Boot’s test support, Spring Security Test, and Microsoft Playwright for tagged end-to-end browser tests; normal Maven test runs exclude the `e2e` group by default. The project is intentionally a workshop/demo baseline, so some functionality and security choices are deliberately simple or incomplete.
+
    ```
 
    For a detailed record of this run, inspect `/tmp/codex-agents-before.log`. It
@@ -452,7 +486,7 @@ a clear purpose.
    Tokens used without `AGENTS.md`
 
    ```
-   19.640
+   20.012
    ```
 
    Token counts are a useful efficiency signal, not a quality score. They do not
@@ -519,8 +553,11 @@ a clear purpose.
    - Keep workshop work local. Do not create, push, or merge pull requests.
    ```
 
-3. Start a fresh Codex session and repeat exactly the same planning request. A
-   fresh session makes the comparison clear: only the repository guidance has
+3. Start a fresh Codex session and repeat exactly the same planning request.
+
+   > Describe this project’s framework and technology stack for a new contributor in a paragraph or two.
+
+   A fresh session makes the comparison clear: only the repository guidance has
    changed.
 
    ```shell
@@ -540,9 +577,10 @@ a clear purpose.
    Review the model’s response.
 
    ```markdown
-   This is a Java 25 application built with Spring Boot 4.1.1 and Maven. It uses Spring Web MVC with Thymeleaf for server-rendered HTML, HTMX for lightweight browser interactivity, and conventional static CSS/assets rather than a separate frontend framework or build pipeline. Business code is organised by capability, such as `catalog` and `cart`, with controllers, services, repositories, and domain models kept within those feature boundaries. Spring Security provides the security baseline, Spring Boot Actuator supplies operational endpoints, and Jakarta validation handles input constraints.
+   This is a Maven-based Spring Boot 4.1.1 application running on Java 25. It uses Spring MVC for HTTP request handling, server-rendered Thymeleaf templates for the UI, and HTMX for lightweight browser-side interactions without a separate frontend framework or build pipeline. The application is organised by business capability, primarily `catalog`, `cart`, and `security`, with `SupermarketApplication` as the entry point.
 
-   Persistence uses Spring Data JPA with an in-memory H2 database for local development and tests. Flyway owns schema evolution through versioned SQL files under `src/main/resources/db/migration`; Hibernate validates the resulting schema rather than generating it. Testing combines Spring Boot’s test tools, MVC/security tests, focused unit tests, and Playwright-based end-to-end browser journeys. Run the full verification with `./mvnw clean verify`; ordinary tests run through Surefire, while Playwright E2E tests run separately through Maven Failsafe.
+   Persistence uses Spring Data JPA with an in-memory H2 database configured in PostgreSQL compatibility mode. Flyway owns the schema through versioned migrations under `src/main/resources/db/migration`, while Hibernate is configured only to validate that schema. Spring Security protects non-public routes, Actuator exposes health information, and validation is handled through Spring’s validation support. Tests include focused unit/MVC tests plus Playwright-based end-to-end browser tests; the Maven build excludes the latter from ordinary tests and runs them through the integration-test lifecycle.
+
    ```
 
    For a detailed record of this run, inspect `/tmp/codex-agents-after.log`. It
@@ -559,7 +597,7 @@ a clear purpose.
    Tokens used with `AGENTS.md`
 
    ```
-   10.216
+   12.761
    ```
 
 4. Compare the test strategies. Do not expect identical wording or a completely
@@ -568,7 +606,7 @@ a clear purpose.
    of distinct browser journeys, move combinations and validation cases to
    lower-scope tests, and identify product decisions that remain open.
 
-   The runs used 19.640 tokens without `AGENTS.md` and 10.216 tokens with it.
+   The runs used 20.012 tokens without `AGENTS.md` and 12.761 tokens with it.
    Treat this as one observation, not a verdict: the file adds context, so one
    run can use the same number of tokens or more. Its more important benefit is
    faster, more consistent use of the team’s guidance across future sessions and
@@ -663,16 +701,15 @@ exercise.
    ```markdown
    ---
    name: review-task-readiness
-   description: Review a GitHub issue, story, or ticket before implementation. Use when the user wants to assess implementation readiness, identify blockers, test acceptance criteria, expose risky assumptions, tighten scope, or decide whether work may start.
+   description: Use this skill when I want you to determine whether an engineer or agent can start implementing a task or issue without inventing material requirements.
+   disable-model-invocation: true
    ---
 
    # Review Issue Readiness
 
-   Act as a senior software engineer with business-analysis discipline, performing a delivery-readiness review of a task or story. Be direct and evidence-led. Challenge vague or unsupported claims, distinguish product decisions from engineering decisions, and do not invent requirements to make a task appear ready.
+   Act as a senior software engineer with business-analysis discipline, performing a delivery-readiness review of a task or story. Answer one question: based on the task and accessible repository evidence, can a capable engineer or agent begin implementation without inventing material product, security, data, compatibility, scope, or user-visible behaviour decisions? Be direct and evidence-led. Challenge vague or unsupported claims, distinguish product decisions from engineering decisions, and do not invent requirements to make a task appear ready.
 
    ## Gather evidence
-
-   1. Read the issue title, body, labels, comments, and linked issues or pull requests.
    ...
    ```
 
@@ -775,7 +812,7 @@ ancestor commit, or content fetched later from a mutable URL.
    ```
    .agents/skills/review-task-readiness/SKILL.md
    .agents/skills/review-task-readiness/agents/openai.yaml
-   Last skill change: e61a1216a6acb32413372be9cea2a6a8c62c88fd
+   Last skill change: 6147ce07c9db07a444b4d8a10d491329a0d93bcb
    Subject: Add repository-local agent skills
    ```
 
@@ -818,24 +855,19 @@ ancestor commit, or content fetched later from a mutable URL.
    Review the model’s analysis.
 
    ```markdown
-   ## Findings
+   | Finding | Evidence | Risk | Human evidence needed |
+   |---|---|---|---|
+   | Read issue metadata, comments, linked issues, and pull requests | [SKILL.md:13](/private/tmp/demo-supermarket/.agents/skills/review-task-readiness/SKILL.md:13) | Medium — may require access to an issue tracker, source-control service, or PR data outside the local workspace. | Identify the approved issue/PR provider, repository/project scope, and confirm read-only access is permitted. |
+   | Read repository instructions, code, and documentation | [SKILL.md:14](/private/tmp/demo-supermarket/.agents/skills/review-task-readiness/SKILL.md:14) | Low — local filesystem reads, bounded only by the broad phrase “needed.” | Confirm the repository root and whether any paths are excluded or contain sensitive material. |
+   | Pause and await a user response | [SKILL.md:28](/private/tmp/demo-supermarket/.agents/skills/review-task-readiness/SKILL.md:28) | Low — workflow control only; no system side effect. | None beyond confirming an interactive review is desired. |
+   | Update the canonical task, story, or ticket when explicitly requested | [SKILL.md:31-33](/private/tmp/demo-supermarket/.agents/skills/review-task-readiness/SKILL.md:31) | High — creates an external or local persistent change to task-tracking data. The target and write mechanism are unspecified. | Explicit task-owner authorization; exact canonical target; proposed patch/diff; confirmation of authenticated account, project, and permission scope. |
+   | Inspect referenced or dependent tasks | [SKILL.md:39](/private/tmp/demo-supermarket/.agents/skills/review-task-readiness/SKILL.md:39) | Medium — can expand filesystem or tracker-data access beyond the initial task. | List of approved dependent-task sources and confirmation that read access to each is appropriate. |
 
-   | Requested capability                                            | Evidence                                              | Risk                                                                                                 | Human evidence needed before approval                                                                                                                |
-   | --------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-   | Read issue title, body, labels, comments, and linked issues/PRs | `.agents/skills/review-task-readiness/SKILL.md:12`    | Medium — may access GitHub or another issue tracker, including potentially private task/PR metadata. | Identify the permitted tracker/repository, confirm access scope, and confirm the issue/PR data may be shared with the reviewing agent.               |
-   | Read repository instructions, code, and documentation           | `.agents/skills/review-task-readiness/SKILL.md:13`    | Low to Medium — filesystem read access; scope is loosely bounded as “needed.”                        | Confirm repository path(s) and the maximum allowed read scope, especially for secrets, deployment material, or unrelated docs.                       |
-   | Ask the user questions and wait for an answer                   | `.agents/skills/review-task-readiness/SKILL.md:24-27` | Low — interaction only; no external action requested.                                                | None beyond normal human participation.                                                                                                              |
-   | Update a canonical task, story, or ticket when explicitly asked | `.agents/skills/review-task-readiness/SKILL.md:30-32` | High — mutates project-tracking data and may alter the authoritative record of requirements.         | Explicit task-owner authorization; exact target system and record; proposed diff/text; confirmation that the actor has authority to make the change. |
-   | Inspect referenced or dependent tasks                           | `.agents/skills/review-task-readiness/SKILL.md:38-39` | Medium — may expand filesystem or tracker access beyond the original task.                           | Enumerate permitted dependent-task sources and confirm they are in scope for review.                                                                 |
+   Credential access: **no findings**. Neither file requests, mentions, or authorizes credentials, secrets, tokens, authentication prompts, or credential storage.
 
-   ## No findings
+   Network access: **no explicit network command or endpoint is specified**. However, the issue/PR and canonical-ticket operations above may require network-backed tracker or source-control access depending on the environment.
 
-   - No named tools or shell commands are requested.
-   - No credential, token, password, key, or secret access is requested.
-   - No network endpoint is explicitly named; however, reading issue/PR metadata could require network access if it is not local.
-   - `.agents/skills/review-task-readiness/agents/openai.yaml` contains only display metadata and a default prompt; it requests no access or side effect.
-
-   This is assessment evidence for human review, not approval.
+   Other external side effects: **no findings** beyond the conditional task/story/ticket update. The YAML configuration only defines display metadata and disables implicit invocation: [openai.yaml:1-7](/private/tmp/demo-supermarket/.agents/skills/review-task-readiness/agents/openai.yaml:1).
    ```
 
    Review the model’s analysis. Check every cited file and line yourself.
@@ -895,7 +927,7 @@ ancestor commit, or content fetched later from a mutable URL.
    # Skill review: review-task-readiness
 
    - **Decision:** Approved for this local, task-readiness exercise.
-   - **Reviewed commit:** 9b0d46787943e3a742f0b699e3708e66a2c7e38f
+   - **Reviewed commit:** fa158e950846a883d2645ad18cd6765f2472d483
    - **Reviewed files:**
      - `.agents/skills/review-task-readiness/SKILL.md`
      - `.agents/skills/review-task-readiness/agents/openai.yaml`
@@ -1000,17 +1032,12 @@ not invoke a skill merely to see what it does.
    acceptance criteria owned by TASK-007.
 
    ```markdown
-   Updated [TASK-004](docs/tasks/TASK-004-guest-checkout-and-order-confirmation.md:16) with all settled decisions and made the acceptance criteria testable. I also updated [TASK-007](docs/tasks/TASK-007-pickup-checkout-validation-and-failure-handling.md:19) to own trimming explicitly, avoiding a dangling dependency on TASK-004.
+   Updated [TASK-004](/private/tmp/demo-supermarket/docs/tasks/TASK-004-guest-checkout-and-order-confirmation.md:1) to record every settled decision and moved validation/empty-cart/archived-product handling to TASK-007. I also corrected TASK-005’s stale “public confirmation” dependency to session-restricted access.
 
-   Verified dependent TASK-005, TASK-006, and TASK-007; no requirements were left dangling. `git diff --check` passes.
+   Verified `git diff --check`; no build was run because this is documentation-only.
 
-   One important security point is now explicit: the short reference is safe only because confirmation access is session-gated; it must not be treated as a credential.
+   Recommendation: **Ready to implement** — Yes. The success path, persistence invariant, session-scoped confirmation access, 404 behavior, repeat-post behavior, and deferred ownership are explicit and testable.
 
-   TASK-004’s front matter still says `needs-grooming`, which conflicts with this assessment; I left it unchanged because you asked to record decisions, not alter workflow status.
-
-   **Ready to implement**
-
-   ...
    ```
 
 2. Review the task changes.
@@ -1027,25 +1054,32 @@ not invoke a skill merely to see what it does.
 
    ```diff
    diff --git a/docs/tasks/TASK-004-guest-checkout-and-order-confirmation.md b/docs/tasks/TASK-004-guest-checkout-and-order-confirmation.md
-   index 6368bd4..6eba973 100644
+   index 6368bd4..68595dd 100644
    --- a/docs/tasks/TASK-004-guest-checkout-and-order-confirmation.md
    +++ b/docs/tasks/TASK-004-guest-checkout-and-order-confirmation.md
-   @@ -15,28 +15,28 @@ This deliberately excludes delivery and the more demanding checkout-integrity wo
-
-    - Add order and order-item tables.
+   @@ -1,7 +1,7 @@
+    ---
+    id: TASK-004
+    title: Guest pickup checkout and order confirmation
+   -status: needs-grooming
+   +status: ready
+    depends_on:
+      - TASK-003
+    ---
+   @@ -17,35 +17,34 @@ This deliberately excludes delivery and the more demanding checkout-integrity wo
     - An order references its source cart through a non-null, unique `cart_id`; a cart can have at most one order.
-   +- Give each order an eight-character uppercase public order reference using only `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`. It is an order identifier, not an access credential.
-   +- Enforce order-reference uniqueness in the database. If creation collides with that constraint, use the existing generic error response; collision retry is deferred to story 6.
     - Add the `PICKUP` fulfilment type and the `PLACED` order status.
     - Add `GET` and `POST /cart/{cartToken}/checkout` for active carts.
    -- Collect full name, email, and phone number. Require trimmed, non-blank values and validate email using Jakarta Bean Validation's `@Email` constraint.
-   +- Collect full name, email, and phone number. Their validation, including trimming and invalid-cart responses, is owned by story 7.
+   +- Collect full name, email, and phone number.
     - Create immutable snapshots of product name, unit label, unit price, quantity, line total, submitted customer data, fulfilment type, goods subtotal, delivery fee, and grand total.
     - Pickup delivery fee is `0.00`.
    -- Mark the cart `CHECKED_OUT` only when order creation succeeds; reject empty carts and carts containing archived products.
+   +- Generate an eight-character uppercase order reference using only `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`. The reference is not an access credential.
+   +- Enforce order-reference uniqueness in the database. A uniqueness collision uses the existing generic error response; collision retry is deferred to story 6.
    +- Mark the cart `CHECKED_OUT` only when order creation succeeds.
     - A repeated submission for a checked-out cart redirects to its existing order instead of creating another order.
-    - Checked-out carts retain the existing cart-not-found behaviour on cart routes.
+   -- Checked-out carts retain the existing cart-not-found behaviour on cart routes.
    -- Add a confirmation route at `/orders/{orderCode}/confirmation`.
    -
    -## Questions to resolve during readiness review
@@ -1055,36 +1089,34 @@ not invoke a skill merely to see what it does.
    -- What customer-facing response should an unknown order code receive?
    -
    -Do not choose answers to these questions implicitly in implementation. The groomed fixture resolves them for the workshop demo.
-   +- The exception is a repeated checkout `POST`, which redirects to the existing confirmation rather than applying the cart-not-found response.
-   +- Add a confirmation route at `/orders/{orderReference}/confirmation`.
-   +- Associate a successful order with the browser session that placed it. Only that session may view its confirmation; durable cross-session confirmation access is deferred.
-   +- An unknown order reference, or a request without the required session association, returns `404 Not Found` with the generic `Order not found` page.
+   +- Checked-out carts retain the existing cart-not-found behaviour on cart routes, except that a repeated checkout `POST` redirects to the existing confirmation without creating another order.
+   +- Add a confirmation route at `/orders/{orderReference}/confirmation`. Only the browser session that placed the order may view it; durable cross-session confirmation access is deferred to a follow-up story.
+   +- An unknown order reference, or a request without the required session association, returns `404 Not Found` with a generic `Order not found` page.
    +- The confirmation page displays the immutable order snapshot: order reference, placed time, fulfilment, customer data, purchased lines, and all totals.
 
     ## Out of Scope
 
     - Delivery addresses, delivery postal-code eligibility, and delivery fees (story 5).
-   -- Concurrent-submission, forced-collision, rollback-injection, and corrupted-data scenarios (story 6).
-   +- Customer-input validation, empty-cart failures, and archived-product failures (story 7).
-   +- Collision retry, concurrent-submission, rollback-injection, and corrupted-data scenarios (story 6).
-   +- Durable cross-session confirmation access.
+    - Concurrent-submission, forced-collision, rollback-injection, and corrupted-data scenarios (story 6).
+   +- Customer-input validation failures, empty-cart checkout failures, and archived-product checkout failures (story 7).
     - Payments, accounts, cancellation, time slots, notifications, editing orders, and lifecycle transitions beyond `PLACED`.
+   +- Durable cross-session confirmation access.
 
     ## Acceptance Criteria
-   @@ -44,8 +44,9 @@ Do not choose answers to these questions implicitly in implementation. The groom
+
     - `./mvnw test` and `./mvnw verify` succeed.
     - A full-stack or end-to-end test completes pickup checkout from an active cart.
     - A valid checkout returns `303 See Other` to the canonical confirmation URL.
    -- Validation failures return `422 Unprocessable Content`, preserve submitted values, and show programmatically associated field errors.
    -- Empty-cart and archived-product checkout failures return `422 Unprocessable Content` with a clear form-level error.
-   +- Each persisted order reference is exactly eight uppercase characters from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, and the database enforces its uniqueness.
-   +- A uniqueness collision receives the existing generic error response without a retry; story 6 owns retry behaviour.
     - Pickup checkout creates one `PLACED` order with immutable product and customer snapshots, a `0.00` delivery fee, and the correct totals.
    -- A repeated checkout creates no additional order and resolves to the original confirmation page.
    -- Checked-out carts cannot be modified.
-   +- The confirmation displays the order reference, placed time, fulfilment, customer data, purchased lines, and all totals from the immutable snapshot.
-   +- The browser session that placed an order can view its confirmation. A different browser session, an unknown reference, or a missing session association receives `404 Not Found` with `Order not found`.
-   +- A repeated checkout `POST` creates no additional order and redirects to the original confirmation page. Other checked-out-cart routes retain the customer-facing cart-not-found response.
+   +- The persisted order reference is exactly eight uppercase characters from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, and the database enforces its uniqueness.
+   +- A repeated checkout `POST` creates no additional order and redirects to the original confirmation page.
+   +- Checked-out cart routes retain the existing cart-not-found response, except for a repeated checkout `POST`.
+   +- The placing browser session can view the confirmation, including order reference, placed time, fulfilment, customer data, purchased lines, and all totals.
+   +- A different browser session, an unknown order reference, and a missing required session association receive `404 Not Found` with a generic `Order not found` page.
    ```
 
 3. Commit the reviewed task locally.
@@ -1252,7 +1284,7 @@ or merge code.
    is missing or does not contain valid JSON.
 
    ```json
-   {"outcome":"modernised","title":"Modernise catalog view as a record","commit_message":"Convert catalog view to a record","summary":"Converted the immutable CatalogView data carrier to a record, removing manual fields, constructor, accessors, equality, hashing, and string rendering while retaining its domain helper.","files_changed":["src/main/java/demo/supermarket/catalog/CatalogView.java","src/test/java/demo/supermarket/catalog/CatalogServiceTest.java"],"validation":[{"command":"./mvnw test","result":"passed"}],"review_focus":"Confirm no external Java callers depend on the removed JavaBean-style getters or the previous exact toString and hashCode output; MVC tests confirm existing routes and Thymeleaf property access remain compatible."}
+   {"outcome":"modernised","title":"Modernise CatalogView as a record","commit_message":"Modernise CatalogView value object","summary":"Converted CatalogView to a Java record, removing manual value-semantics boilerplate while preserving existing bean-style accessors and behaviour. An unrelated task-document change was preserved and remains unstaged.","files_changed":["src/main/java/demo/supermarket/catalog/CatalogView.java"],"validation":[{"command":"./mvnw test","result":"passed"}],"review_focus":"Record components remain shallowly mutable through their list references, matching prior behaviour; existing get* accessors preserve template compatibility."}
    ```
 
    The hand-off may be compact JSON. Use `jq` to display it in a readable,
@@ -1267,12 +1299,11 @@ or merge code.
    ```json
    {
      "outcome": "modernised",
-     "title": "Modernise catalog view as a record",
-     "commit_message": "Convert catalog view to a record",
-     "summary": "Converted the immutable CatalogView data carrier to a record, removing manual fields, constructor, accessors, equality, hashing, and string rendering while retaining its domain helper.",
+     "title": "Modernise CatalogView as a record",
+     "commit_message": "Modernise CatalogView value object",
+     "summary": "Converted CatalogView to a Java record, removing manual value-semantics boilerplate while preserving existing bean-style accessors and behaviour. An unrelated task-document change was preserved and remains unstaged.",
      "files_changed": [
-       "src/main/java/demo/supermarket/catalog/CatalogView.java",
-       "src/test/java/demo/supermarket/catalog/CatalogServiceTest.java"
+       "src/main/java/demo/supermarket/catalog/CatalogView.java"
      ],
      "validation": [
        {
@@ -1280,7 +1311,7 @@ or merge code.
          "result": "passed"
        }
      ],
-     "review_focus": "Confirm no external Java callers depend on the removed JavaBean-style getters or the previous exact toString and hashCode output; MVC tests confirm existing routes and Thymeleaf property access remain compatible."
+     "review_focus": "Record components remain shallowly mutable through their list references, matching prior behaviour; existing get* accessors preserve template compatibility."
    }
    ```
 
@@ -1410,3 +1441,7 @@ or merge code.
    packaged in a script and scheduled. A scheduled workflow should retain its
    guardrails, such as avoiding duplicate open pull requests, and should still require
    human review before merge.
+
+## Automating Agentic Workflows
+
+> Breakpoint reached: Stop here
